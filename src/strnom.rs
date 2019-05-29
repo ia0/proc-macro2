@@ -63,7 +63,7 @@ impl<'a> Cursor<'a> {
 
 pub type PResult<'a, O> = Result<(Cursor<'a>, O), LexError>;
 
-pub fn whitespace(input: Cursor) -> PResult<()> {
+pub fn whitespace(input: Cursor<'_>) -> PResult<'_, ()> {
     if input.is_empty() {
         return Err(LexError);
     }
@@ -95,7 +95,7 @@ pub fn whitespace(input: Cursor) -> PResult<()> {
             }
         }
         match bytes[i] {
-            b' ' | 0x09...0x0d => {
+            b' ' | 0x09..=0x0d => {
                 i += 1;
                 continue;
             }
@@ -113,7 +113,7 @@ pub fn whitespace(input: Cursor) -> PResult<()> {
     Ok((input.advance(input.len()), ()))
 }
 
-pub fn block_comment(input: Cursor) -> PResult<&str> {
+pub fn block_comment(input: Cursor<'_>) -> PResult<'_, &str> {
     if !input.starts_with("/*") {
         return Err(LexError);
     }
@@ -138,7 +138,7 @@ pub fn block_comment(input: Cursor) -> PResult<&str> {
     Err(LexError)
 }
 
-pub fn skip_whitespace(input: Cursor) -> Cursor {
+pub fn skip_whitespace(input: Cursor<'_>) -> Cursor<'_> {
     match whitespace(input) {
         Ok((rest, _)) => rest,
         Err(LexError) => input,
@@ -150,7 +150,7 @@ fn is_whitespace(ch: char) -> bool {
     ch.is_whitespace() || ch == '\u{200e}' || ch == '\u{200f}'
 }
 
-pub fn word_break(input: Cursor) -> PResult<()> {
+pub fn word_break(input: Cursor<'_>) -> PResult<'_, ()> {
     match input.chars().next() {
         Some(ch) if UnicodeXID::is_xid_continue(ch) => Err(LexError),
         Some(_) | None => Ok((input, ())),
@@ -180,7 +180,7 @@ macro_rules! alt {
     ($i:expr, $subrule:ident!( $($args:tt)* ) => { $gen:expr } | $($rest:tt)+) => {
         match $subrule!($i, $($args)*) {
             Ok((i, o)) => Ok((i, $gen(o))),
-            Err(LexError) => alt!($i, $($rest)*)
+            Err(LexError) => alt!($i, $($rest)+)
         }
     };
 
@@ -372,7 +372,7 @@ macro_rules! preceded {
 
 macro_rules! delimited {
     ($i:expr, $submac:ident!( $($args:tt)* ), $($rest:tt)+) => {
-        match tuple_parser!($i, (), $submac!($($args)*), $($rest)*) {
+        match tuple_parser!($i, (), $submac!($($args)*), $($rest)+) {
             Err(LexError) => Err(LexError),
             Ok((i1, (_, o, _))) => Ok((i1, o))
         }

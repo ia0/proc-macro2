@@ -229,20 +229,20 @@ impl FromIterator<TokenStream> for TokenStream {
 /// possibly `TokenTree::Group`s with `Delimiter::None` delimiters and negative
 /// numeric literals.
 impl fmt::Display for TokenStream {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
 
 /// Prints token in a form convenient for debugging.
 impl fmt::Debug for TokenStream {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
 
 impl fmt::Debug for LexError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
@@ -292,7 +292,7 @@ impl SourceFile {
 
 #[cfg(procmacro2_semver_exempt)]
 impl fmt::Debug for SourceFile {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
@@ -443,7 +443,7 @@ impl Span {
 
 /// Prints a span in a form convenient for debugging.
 impl fmt::Debug for Span {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
@@ -517,7 +517,7 @@ impl From<Literal> for TokenTree {
 /// possibly `TokenTree::Group`s with `Delimiter::None` delimiters and negative
 /// numeric literals.
 impl fmt::Display for TokenTree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             TokenTree::Group(ref t) => t.fmt(f),
             TokenTree::Ident(ref t) => t.fmt(f),
@@ -529,7 +529,7 @@ impl fmt::Display for TokenTree {
 
 /// Prints token tree in a form convenient for debugging.
 impl fmt::Debug for TokenTree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Each of these has the name in the struct type in the derived debug,
         // so don't bother with an extra layer of indirection
         match *self {
@@ -657,13 +657,13 @@ impl Group {
 /// into the same group (modulo spans), except for possibly `TokenTree::Group`s
 /// with `Delimiter::None` delimiters.
 impl fmt::Display for Group {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.inner, formatter)
     }
 }
 
 impl fmt::Debug for Group {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self.inner, formatter)
     }
 }
@@ -736,13 +736,13 @@ impl Punct {
 /// Prints the punctuation character as a string that should be losslessly
 /// convertible back into the same character.
 impl fmt::Display for Punct {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.op.fmt(f)
     }
 }
 
 impl fmt::Debug for Punct {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = fmt.debug_struct("Punct");
         debug.field("op", &self.op);
         debug.field("spacing", &self.spacing);
@@ -926,13 +926,13 @@ impl Hash for Ident {
 /// Prints the identifier as a string that should be losslessly convertible back
 /// into the same identifier.
 impl fmt::Display for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
 
 impl fmt::Debug for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
@@ -1097,13 +1097,13 @@ impl Literal {
 }
 
 impl fmt::Debug for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
 
 impl fmt::Display for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
@@ -1137,7 +1137,7 @@ pub mod token_stream {
     }
 
     impl fmt::Debug for IntoIter {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             self.inner.fmt(f)
         }
     }

@@ -26,7 +26,7 @@ fn nightly_works() -> bool {
     use std::sync::Once;
 
     #[allow(deprecated)]
-    static WORKS: AtomicUsize = ATOMIC_USIZE_INIT;
+    static WORKS: AtomicUsize = AtomicUsize::new(0);
     static INIT: Once = Once::new();
 
     match WORKS.load(Ordering::SeqCst) {
@@ -60,7 +60,7 @@ fn nightly_works() -> bool {
     // not occur, they need to call e.g. `proc_macro2::Span::call_site()` from
     // the main thread before launching any other threads.
     INIT.call_once(|| {
-        type PanicHook = Fn(&PanicInfo) + Sync + Send + 'static;
+        type PanicHook = dyn Fn(&PanicInfo<'_>) + Sync + Send + 'static;
 
         let null_hook: Box<PanicHook> = Box::new(|_panic_info| { /* ignore */ });
         let sanity_check = &*null_hook as *const PanicHook;
@@ -127,7 +127,7 @@ impl FromStr for TokenStream {
 }
 
 impl fmt::Display for TokenStream {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TokenStream::Compiler(tts) => tts.fmt(f),
             TokenStream::Fallback(tts) => tts.fmt(f),
@@ -289,7 +289,7 @@ impl Extend<TokenStream> for TokenStream {
 }
 
 impl fmt::Debug for TokenStream {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TokenStream::Compiler(tts) => tts.fmt(f),
             TokenStream::Fallback(tts) => tts.fmt(f),
@@ -310,7 +310,7 @@ impl From<fallback::LexError> for LexError {
 }
 
 impl fmt::Debug for LexError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             LexError::Compiler(e) => e.fmt(f),
             LexError::Fallback(e) => e.fmt(f),
@@ -369,7 +369,7 @@ impl Iterator for TokenTreeIter {
 }
 
 impl fmt::Debug for TokenTreeIter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TokenTreeIter").finish()
     }
 }
@@ -405,7 +405,7 @@ impl SourceFile {
 
 #[cfg(super_unstable)]
 impl fmt::Debug for SourceFile {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SourceFile::Compiler(a) => a.fmt(f),
             SourceFile::Fallback(a) => a.fmt(f),
@@ -550,7 +550,7 @@ impl From<fallback::Span> for Span {
 }
 
 impl fmt::Debug for Span {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Span::Compiler(s) => s.fmt(f),
             Span::Fallback(s) => s.fmt(f),
@@ -656,7 +656,7 @@ impl From<fallback::Group> for Group {
 }
 
 impl fmt::Display for Group {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Group::Compiler(group) => group.fmt(formatter),
             Group::Fallback(group) => group.fmt(formatter),
@@ -665,7 +665,7 @@ impl fmt::Display for Group {
 }
 
 impl fmt::Debug for Group {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Group::Compiler(group) => group.fmt(formatter),
             Group::Fallback(group) => group.fmt(formatter),
@@ -751,7 +751,7 @@ where
 }
 
 impl fmt::Display for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Ident::Compiler(t) => t.fmt(f),
             Ident::Fallback(t) => t.fmt(f),
@@ -760,7 +760,7 @@ impl fmt::Display for Ident {
 }
 
 impl fmt::Debug for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Ident::Compiler(t) => t.fmt(f),
             Ident::Fallback(t) => t.fmt(f),
@@ -910,7 +910,7 @@ impl From<fallback::Literal> for Literal {
 }
 
 impl fmt::Display for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Literal::Compiler(t) => t.fmt(f),
             Literal::Fallback(t) => t.fmt(f),
@@ -919,7 +919,7 @@ impl fmt::Display for Literal {
 }
 
 impl fmt::Debug for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Literal::Compiler(t) => t.fmt(f),
             Literal::Fallback(t) => t.fmt(f),

@@ -34,7 +34,7 @@ impl TokenStream {
 }
 
 #[cfg(span_locations)]
-fn get_cursor(src: &str) -> Cursor {
+fn get_cursor(src: &str) -> Cursor<'_> {
     // Create a dummy file & add it to the source map
     SOURCE_MAP.with(|cm| {
         let mut cm = cm.borrow_mut();
@@ -48,7 +48,7 @@ fn get_cursor(src: &str) -> Cursor {
 }
 
 #[cfg(not(span_locations))]
-fn get_cursor(src: &str) -> Cursor {
+fn get_cursor(src: &str) -> Cursor<'_> {
     Cursor { rest: src }
 }
 
@@ -73,7 +73,7 @@ impl FromStr for TokenStream {
 }
 
 impl fmt::Display for TokenStream {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut joint = false;
         for (i, tt) in self.inner.iter().enumerate() {
             if i != 0 && !joint {
@@ -111,7 +111,7 @@ impl fmt::Display for TokenStream {
 }
 
 impl fmt::Debug for TokenStream {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("TokenStream ")?;
         f.debug_list().entries(self.clone()).finish()
     }
@@ -209,7 +209,7 @@ impl SourceFile {
 }
 
 impl fmt::Debug for SourceFile {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SourceFile")
             .field("path", &self.path())
             .field("is_real", &self.is_real())
@@ -428,7 +428,7 @@ impl Span {
 }
 
 impl fmt::Debug for Span {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         #[cfg(procmacro2_semver_exempt)]
         return write!(f, "bytes({}..{})", self.lo, self.hi);
 
@@ -487,7 +487,7 @@ impl Group {
 }
 
 impl fmt::Display for Group {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (left, right) = match self.delimiter {
             Delimiter::Parenthesis => ("(", ")"),
             Delimiter::Brace => ("{", "}"),
@@ -504,7 +504,7 @@ impl fmt::Display for Group {
 }
 
 impl fmt::Debug for Group {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = fmt.debug_struct("Group");
         debug.field("delimiter", &self.delimiter);
         debug.field("stream", &self.stream);
@@ -616,7 +616,7 @@ where
 }
 
 impl fmt::Display for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.raw {
             "r#".fmt(f)?;
         }
@@ -627,7 +627,7 @@ impl fmt::Display for Ident {
 impl fmt::Debug for Ident {
     // Ident(proc_macro), Ident(r#union)
     #[cfg(not(procmacro2_semver_exempt))]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = f.debug_tuple("Ident");
         debug.field(&format_args!("{}", self));
         debug.finish()
@@ -638,7 +638,7 @@ impl fmt::Debug for Ident {
     //     span: bytes(128..138)
     // }
     #[cfg(procmacro2_semver_exempt)]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = f.debug_struct("Ident");
         debug.field("sym", &format_args!("{}", self));
         debug.field("span", &self.span);
@@ -771,7 +771,7 @@ impl Literal {
                 b'\r' => escaped.push_str(r"\r"),
                 b'"' => escaped.push_str("\\\""),
                 b'\\' => escaped.push_str("\\\\"),
-                b'\x20'...b'\x7E' => escaped.push(*b as char),
+                b'\x20'..=b'\x7E' => escaped.push(*b as char),
                 _ => escaped.push_str(&format!("\\x{:02X}", b)),
             }
         }
@@ -789,13 +789,13 @@ impl Literal {
 }
 
 impl fmt::Display for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.text.fmt(f)
     }
 }
 
 impl fmt::Debug for Literal {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = fmt.debug_struct("Literal");
         debug.field("lit", &format_args!("{}", self.text));
         #[cfg(procmacro2_semver_exempt)]
@@ -804,7 +804,7 @@ impl fmt::Debug for Literal {
     }
 }
 
-fn token_stream(mut input: Cursor) -> PResult<TokenStream> {
+fn token_stream(mut input: Cursor<'_>) -> PResult<'_, TokenStream> {
     let mut trees = Vec::new();
     loop {
         let input_no_ws = skip_whitespace(input);
@@ -849,7 +849,7 @@ fn spanned<'a, T>(
     Ok((a, (b, span)))
 }
 
-fn token_tree(input: Cursor) -> PResult<TokenTree> {
+fn token_tree(input: Cursor<'_>) -> PResult<'_, TokenTree> {
     let (rest, (mut tt, span)) = spanned(input, token_kind)?;
     tt.set_span(span);
     Ok((rest, tt))
@@ -885,11 +885,11 @@ named!(group -> Group, alt!(
     ) => { |ts| Group::new(Delimiter::Brace, ts) }
 ));
 
-fn symbol_leading_ws(input: Cursor) -> PResult<TokenTree> {
+fn symbol_leading_ws(input: Cursor<'_>) -> PResult<'_, TokenTree> {
     symbol(skip_whitespace(input))
 }
 
-fn symbol(input: Cursor) -> PResult<TokenTree> {
+fn symbol(input: Cursor<'_>) -> PResult<'_, TokenTree> {
     let mut chars = input.char_indices();
 
     let raw = input.starts_with("r#");
@@ -924,7 +924,7 @@ fn symbol(input: Cursor) -> PResult<TokenTree> {
     }
 }
 
-fn literal(input: Cursor) -> PResult<Literal> {
+fn literal(input: Cursor<'_>) -> PResult<'_, Literal> {
     let input_no_ws = skip_whitespace(input);
 
     match literal_nocapture(input_no_ws) {
@@ -967,7 +967,7 @@ named!(quoted_string -> (), delimited!(
     tag!("\"")
 ));
 
-fn cooked_string(input: Cursor) -> PResult<()> {
+fn cooked_string(input: Cursor<'_>) -> PResult<'_, ()> {
     let mut chars = input.char_indices().peekable();
     while let Some((byte_offset, ch)) = chars.next() {
         match ch {
@@ -1024,7 +1024,7 @@ named!(byte_string -> (), alt!(
     ) => { |_| () }
 ));
 
-fn cooked_byte_string(mut input: Cursor) -> PResult<()> {
+fn cooked_byte_string(mut input: Cursor<'_>) -> PResult<'_, ()> {
     let mut bytes = input.bytes().enumerate();
     'outer: while let Some((offset, b)) = bytes.next() {
         match b {
@@ -1066,7 +1066,7 @@ fn cooked_byte_string(mut input: Cursor) -> PResult<()> {
     Err(LexError)
 }
 
-fn raw_string(input: Cursor) -> PResult<()> {
+fn raw_string(input: Cursor<'_>) -> PResult<'_, ()> {
     let mut chars = input.char_indices();
     let mut n = 0;
     while let Some((byte_offset, ch)) = chars.next() {
@@ -1100,7 +1100,7 @@ named!(byte -> (), do_parse!(
     (())
 ));
 
-fn cooked_byte(input: Cursor) -> PResult<()> {
+fn cooked_byte(input: Cursor<'_>) -> PResult<'_, ()> {
     let mut bytes = input.bytes().enumerate();
     let ok = match bytes.next().map(|(_, b)| b) {
         Some(b'\\') => match bytes.next().map(|(_, b)| b) {
@@ -1134,7 +1134,7 @@ named!(character -> (), do_parse!(
     (())
 ));
 
-fn cooked_char(input: Cursor) -> PResult<()> {
+fn cooked_char(input: Cursor<'_>) -> PResult<'_, ()> {
     let mut chars = input.char_indices();
     let ok = match chars.next().map(|(_, ch)| ch) {
         Some('\\') => match chars.next().map(|(_, ch)| ch) {
@@ -1173,8 +1173,8 @@ fn backslash_x_char<I>(chars: &mut I) -> bool
 where
     I: Iterator<Item = (usize, char)>,
 {
-    next_ch!(chars @ '0'...'7');
-    next_ch!(chars @ '0'...'9' | 'a'...'f' | 'A'...'F');
+    next_ch!(chars @ '0'..='7');
+    next_ch!(chars @ '0'..='9' | 'a'..='f' | 'A'..='F');
     true
 }
 
@@ -1182,8 +1182,8 @@ fn backslash_x_byte<I>(chars: &mut I) -> bool
 where
     I: Iterator<Item = (usize, u8)>,
 {
-    next_ch!(chars @ b'0'...b'9' | b'a'...b'f' | b'A'...b'F');
-    next_ch!(chars @ b'0'...b'9' | b'a'...b'f' | b'A'...b'F');
+    next_ch!(chars @ b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F');
+    next_ch!(chars @ b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F');
     true
 }
 
@@ -1192,16 +1192,16 @@ where
     I: Iterator<Item = (usize, char)>,
 {
     next_ch!(chars @ '{');
-    next_ch!(chars @ '0'...'9' | 'a'...'f' | 'A'...'F');
+    next_ch!(chars @ '0'..='9' | 'a'..='f' | 'A'..='F');
     loop {
-        let c = next_ch!(chars @ '0'...'9' | 'a'...'f' | 'A'...'F' | '_' | '}');
+        let c = next_ch!(chars @ '0'..='9' | 'a'..='f' | 'A'..='F' | '_' | '}');
         if c == '}' {
             return true;
         }
     }
 }
 
-fn float(input: Cursor) -> PResult<()> {
+fn float(input: Cursor<'_>) -> PResult<'_, ()> {
     let (rest, ()) = float_digits(input)?;
     for suffix in &["f32", "f64"] {
         if rest.starts_with(suffix) {
@@ -1211,7 +1211,7 @@ fn float(input: Cursor) -> PResult<()> {
     word_break(rest)
 }
 
-fn float_digits(input: Cursor) -> PResult<()> {
+fn float_digits(input: Cursor<'_>) -> PResult<'_, ()> {
     let mut chars = input.chars().peekable();
     match chars.next() {
         Some(ch) if ch >= '0' && ch <= '9' => {}
@@ -1223,7 +1223,7 @@ fn float_digits(input: Cursor) -> PResult<()> {
     let mut has_exp = false;
     while let Some(&ch) = chars.peek() {
         match ch {
-            '0'...'9' | '_' => {
+            '0'..='9' | '_' => {
                 chars.next();
                 len += 1;
             }
@@ -1268,7 +1268,7 @@ fn float_digits(input: Cursor) -> PResult<()> {
                     chars.next();
                     len += 1;
                 }
-                '0'...'9' => {
+                '0'..='9' => {
                     chars.next();
                     len += 1;
                     has_exp_value = true;
@@ -1288,7 +1288,7 @@ fn float_digits(input: Cursor) -> PResult<()> {
     Ok((input.advance(len), ()))
 }
 
-fn int(input: Cursor) -> PResult<()> {
+fn int(input: Cursor<'_>) -> PResult<'_, ()> {
     let (rest, ()) = digits(input)?;
     for suffix in &[
         "isize", "i8", "i16", "i32", "i64", "i128", "usize", "u8", "u16", "u32", "u64", "u128",
@@ -1300,7 +1300,7 @@ fn int(input: Cursor) -> PResult<()> {
     word_break(rest)
 }
 
-fn digits(mut input: Cursor) -> PResult<()> {
+fn digits(mut input: Cursor<'_>) -> PResult<'_, ()> {
     let base = if input.starts_with("0x") {
         input = input.advance(2);
         16
@@ -1318,9 +1318,9 @@ fn digits(mut input: Cursor) -> PResult<()> {
     let mut empty = true;
     for b in input.bytes() {
         let digit = match b {
-            b'0'...b'9' => (b - b'0') as u64,
-            b'a'...b'f' => 10 + (b - b'a') as u64,
-            b'A'...b'F' => 10 + (b - b'A') as u64,
+            b'0'..=b'9' => (b - b'0') as u64,
+            b'a'..=b'f' => 10 + (b - b'a') as u64,
+            b'A'..=b'F' => 10 + (b - b'A') as u64,
             b'_' => {
                 if empty && base == 10 {
                     return Err(LexError);
@@ -1343,7 +1343,7 @@ fn digits(mut input: Cursor) -> PResult<()> {
     }
 }
 
-fn op(input: Cursor) -> PResult<Punct> {
+fn op(input: Cursor<'_>) -> PResult<'_, Punct> {
     let input = skip_whitespace(input);
     match op_char(input) {
         Ok((rest, '\'')) => {
@@ -1361,7 +1361,7 @@ fn op(input: Cursor) -> PResult<Punct> {
     }
 }
 
-fn op_char(input: Cursor) -> PResult<char> {
+fn op_char(input: Cursor<'_>) -> PResult<'_, char> {
     if input.starts_with("//") || input.starts_with("/*") {
         // Do not accept `/` of a comment as an op.
         return Err(LexError);
@@ -1382,7 +1382,7 @@ fn op_char(input: Cursor) -> PResult<char> {
     }
 }
 
-fn doc_comment(input: Cursor) -> PResult<Vec<TokenTree>> {
+fn doc_comment(input: Cursor<'_>) -> PResult<'_, Vec<TokenTree>> {
     let mut trees = Vec::new();
     let (rest, ((comment, inner), span)) = spanned(input, doc_comment_contents)?;
     trees.push(TokenTree::Punct(Punct::new('#', Spacing::Alone)));
